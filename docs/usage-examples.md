@@ -2,7 +2,7 @@
 
 ### Initializing Configuration
 
-To get started with the Simple TOML Configurator, you need to initialize the configuration settings using the `init_config` method. This sets up the default values and configuration file paths.
+To get started with the Simple TOML Configurator, you need to initialize the configuration settings using the `init_config` method or init `Configuration` object with the arguments. This sets up the default values and configuration file paths.
 
 ```python
 from simple_toml_configurator import Configuration

@@ -255,9 +255,6 @@ class Configuration:
         >>> {settings.mysql_databases["prod"]}
         'prod_db2'
         ```
-        
-        Args:
-            settings (dict): Dict with key values
         """
         self._write_config_to_file()
         self._set_attributes()

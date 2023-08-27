@@ -18,7 +18,16 @@ The **Simple TOML Configurator** is a versatile Python library designed to strea
 
 7. **Customization Capabilities:** The `Configuration` class can be extended and customized to cater to application-specific requirements. Developers can implement custom logic with getters and setters to handle unique settings or scenarios.
 
+## Installation
+
+Install with
+```bash
+pip install simple-toml-configurator
+```
+
 ## Usage Example
+
+See [Usage](https://gilbn.github.io/Simple-TOML-Configurator/latest/usage-examples/) for more examples.
 
 ```python
 from simple_toml_configurator import Configuration
@@ -29,22 +38,21 @@ default_config = {
         "ip": "0.0.0.0",
         "host": "",
         "port": 5000,
-        "upload_folder": "uploads"
-    }
+        "upload_folder": "uploads",
+    },
     "mysql": {
         "user": "root",
-        "password": "root"
+        "password": "root",
         "databases": {
             "prod": "db1",
-            "dev": "db2"
-            }
+            "dev": "db2",
+            },
     }
 }
 
 # Initialize the Simple TOML Configurator
-settings = Configuration()
-settings.init_config("config", default_config, "app_config")
-# Stores an app_config.toml file in the `config` folder at the current working directory.
+settings = Configuration("config", default_config, "app_config")
+# Creates an `app_config.toml` file in the `config` folder at the current working directory.
 
 # Access and update configuration values
 print(settings.app_ip)  # Output: '0.0.0.0'
@@ -62,4 +70,20 @@ settings.update()
 print(settings.mysql_databases["prod"])  # Output: 'db3'
 ```
 
-The **Simple TOML Configurator** empowers developers to efficiently manage configuration settings across a wide range of Python applications. Whether you're building a web application, a command-line tool, or a standalone script, this library provides the tools you need to maintain and access configuration values with ease and clarity.
+**`app_config.toml` contents**
+
+```toml
+[app]
+ip = "1.2.3.4"
+host = ""
+port = 5000
+upload_folder = "uploads"
+
+[mysql]
+user = "root"
+password = "root"
+
+[mysql.databases]
+prod = "db3"
+dev = "db2"
+```
