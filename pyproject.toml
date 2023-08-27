@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Simple-TOML-Configurator"
+version = "1.0.0"
+license = {text = "MIT License"}
+authors = [{name = "GilbN", email = "me@gilbn.dev"}]
+description = "A simple TOML configurator for Python"
+readme = "README.md"
+requires-python = ">=3.7.0"
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+keywords = ["configuration", "TOML", "settings", "management", "Python"]
+dependencies = [
+    "tomlkit>=0.12.1"
+]
+
+[project.urls]
+Homepage = "https://github.com/GilbN/Simple-TOML-Configurator"
+
+[project.optional-dependencies]
+dev = ["pytest","pytest-cov","pytest-mock"]
+
+[tool.setuptools.dynamic]
+version = {attr = "simple_toml_configurator.__version__"}

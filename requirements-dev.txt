@@ -1,0 +1,8 @@
+# install all requirements from requirements.txt
+-r requirements.txt
+
+# ... and install more
+pytest
+pytest-cov
+pytest-mock
+wheel
