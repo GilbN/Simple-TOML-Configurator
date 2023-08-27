@@ -1,5 +1,11 @@
 # Simple TOML Configurator
 
+[![PyPI version](https://badge.fury.io/py/Simple-TOML-Configurator.svg)](https://badge.fury.io/py/Simple-TOML-Configurator)
+![PyPI - License](https://img.shields.io/pypi/l/Simple-TOML-Configurator)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/Simple-TOML-Configurator)
+![PyPI - Wheel](https://img.shields.io/pypi/wheel/Simple-TOML-Configurator)
+![Build](https://github.com/gilbn/Simple-TOML-Configurator/actions/workflows/tests.yml/badge.svg?event=push)
+
 The **Simple TOML Configurator** is a versatile Python library designed to streamline the handling and organization of configuration settings across various types of applications. This library facilitates the management of configuration values through a user-friendly interface and stores these settings in TOML file format for easy readability and accessibility.
 
 ## Features
