@@ -8,6 +8,10 @@
 
 The **Simple TOML Configurator** is a versatile Python library designed to streamline the handling and organization of configuration settings across various types of applications. This library facilitates the management of configuration values through a user-friendly interface and stores these settings in TOML file format for easy readability and accessibility.
 
+## Documentation
+
+https://gilbn.github.io/Simple-TOML-Configurator/
+
 ## Features
 
 1. **Effortless Configuration Management:** The heart of the library is the `Configuration` class, which simplifies the management of configuration settings. It provides intuitive methods to load, update, and store configurations, ensuring a smooth experience for developers.
