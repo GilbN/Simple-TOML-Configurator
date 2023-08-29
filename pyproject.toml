@@ -8,7 +8,6 @@ version = "1.0.1"
 license = {text = "MIT License"}
 authors = [{name = "GilbN", email = "me@gilbn.dev"}]
 description = "A simple TOML configurator for Python"
-documentation = "https://gilbn.github.io/Simple-TOML-Configurator/"
 readme = "README.md"
 requires-python = ">=3.7.0"
 classifiers = [
