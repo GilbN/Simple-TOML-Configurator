@@ -65,6 +65,17 @@ settings = Configuration("config", default_config, "app_config")
 # Creates an `app_config.toml` file in the `config` folder at the current working directory.
 
 # Access and update configuration values
+print(settings.app.ip)  # Output: '0.0.0.0'
+settings.app.ip = "1.2.3.4"
+print(settings.app.ip)  # Output: '1.2.3.4'
+
+# Access nested configuration values
+print(settings.mysql.databases.prod)  # Output: 'db1'
+settings.mysql.databases.prod = 'new_value'
+settings.update()
+print(settings.mysql.databases.prod)  # Output: 'new_value'
+
+# Access and update configuration values
 print(settings.app_ip)  # Output: '0.0.0.0'
 settings.update_config({"app_ip": "1.2.3.4"})
 print(settings.app_ip)  # Output: '1.2.3.4'

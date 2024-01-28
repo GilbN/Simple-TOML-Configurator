@@ -5,7 +5,7 @@
 ```
 ├── __init__.py
 ├── app.py
-└── extenstions
+└── extensions
     └── config.py
 ```
 

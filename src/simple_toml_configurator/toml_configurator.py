@@ -1,13 +1,14 @@
 from typing import Any
 import os
+import re
+from collections.abc import Mapping
+import logging
+from pathlib import Path
 import tomlkit
 from tomlkit import TOMLDocument
-from pathlib import Path
-import logging
-
 from .exceptions import *
 
-__version__ = "1.0.1"
+__version__ = "1.1.0"
 
 logger = logging.getLogger(__name__)
 
@@ -28,14 +29,18 @@ class Configuration:
         >>> from simple_toml_configurator import Configuration
         >>> settings = Configuration("config", default_config, "app_config")
         {'app': {'ip': '0.0.0.0', 'host': '', 'port': 5000, 'upload_folder': 'uploads'}}
+        # Update the config dict directly
+        >>> settings.app.ip = "1.1.1.1"
+        >>> settings.update()
+        >>> settings.app.ip
+        '1.1.1.1'
         >>> settings.get_settings()
-        {'app_ip': '0.0.0.0', 'app_host': '', 'app_port': 5000, 'app_upload_folder': 'uploads'}
+        {'app_ip': '1.1.1.1', 'app_host': '', 'app_port': 5000, 'app_upload_folder': 'uploads'}
         >>> settings.update_config({"app_ip":"1.2.3.4"})
         >>> settings.app_ip
         '1.2.3.4'
         >>> settings.config.get("app").get("ip")
         '1.2.3.4'
-        # Update the config dict directly
         >>> settings.config["app"]["ip"] = "0.0.0.0"
         >>> settings.update()
         >>> settings.app_ip
@@ -139,33 +144,58 @@ class Configuration:
         return self.config
 
     def _sync_config_values(self) -> None:
-        """Add any new/missing values/tables from self.defaults into the existing TOML config"""
-        for default_table in self.defaults:
-            if default_table not in self.config.keys():
-                self.logger.info("Adding new TOML table: ('%s') to TOML Document", default_table)
-                self.config[default_table] = self.defaults[default_table]
-                continue
-            if default_table in self.config.keys():
-                for default_key, default_value in self.defaults[default_table].items():
-                    if default_key not in self.config[default_table].keys():
-                        self.logger.info("Adding new Key: ('%s':'***') to Table: ('%s')", default_key, default_table) # pragma: no cover
-                        self.config[default_table][default_key] = default_value # pragma: no cover
+        """Add any new/missing values/tables from self.defaults into the existing TOML config
+        - If a table is missing from the config, it will be added with the default table.
+        - If a table is missing from the defaults, it will be removed from the config.
+        If there is a mismatch in types between the default value and the config value, the config value will be replaced with the default value.
+        
+        For example if the default value is a string and the existing config value is a dictionary, the config value will be replaced with the default value.
+        """
+        def update_dict(current_dict:dict, default_dict:dict) -> dict:
+            """Recursively update a dictionary with another dictionary.
+
+            Args:
+                current_dict (dict): The dictionary to update. Loaded from the config file.
+                default_dict (dict): The dictionary to update with. Loaded from the defaults.
+
+            Returns:
+                dict: The updated dictionary
+            """
+            for key, value in default_dict.items():
+                if isinstance(value, Mapping):
+                    if not isinstance(current_dict.get(key, {}), Mapping):
+                        logger.warning("Mismatched types for key '%s': expected dictionary, got %s. Replacing with new dictionary.", key, type(current_dict.get(key))) # pragma: no cover
+                        current_dict[key] = {}
+                    if key not in current_dict:
+                        logger.info("Adding new Table: ('%s')", key) # pragma: no cover
+                    current_dict[key] = update_dict(current_dict.get(key, {}), value)
+                else:
+                    if key not in current_dict:
+                        logger.info("Adding new Key: ('%s':'***') in table: %s", key, current_dict) # pragma: no cover
+                        current_dict[key] = value
+            return current_dict
+
+        self.config = update_dict(self.config, self.defaults)
         self._write_config_to_file()
         self._clear_old_config_values()
 
     def _clear_old_config_values(self) -> None:
         """Remove any old values/tables from self.config that are not in self.defaults
         """
-        for table in self.config:
-            if table not in self.defaults.keys():
-                self.config.remove(table) # pragma: no cover
-                self._write_config_to_file() # pragma: no cover
-                return self._clear_old_config_values() # pragma: no cover
-            for key in list(self.config[table].keys()):
-                if key not in self.defaults[table]:
-                    self.config[table].remove(key)
-                    self._write_config_to_file()
-                    continue
+        def remove_keys(config:dict, defaults:dict) -> None:
+            # Create a copy of config to iterate over
+            config_copy = config.copy()
+
+            # Remove keys that are in config but not in defaults
+            for key in config_copy:
+                if key not in defaults:
+                    del config[key]
+                    logger.info("Removing Key: ('%s') in Table: ( '%s' )", key, config_copy)
+                elif isinstance(config[key], Mapping):
+                    remove_keys(config[key], defaults[key])
+
+        remove_keys(self.config, self.defaults)
+        self._write_config_to_file()
 
     def get_settings(self) -> dict[str, Any]:
         """Get all config key values as a dictionary.
@@ -203,6 +233,7 @@ class Configuration:
             dict[str, Any]: Returns all attributes in a dictionary
         """
         for table in self.config:
+            setattr(self,table,ConfigObject(self.config[table]))
             for key, value in self.config[table].items():
                 setattr(self, f"_{table}_{key}", value)
                 setattr(self, f"{table}_{key}", value)
@@ -248,12 +279,14 @@ class Configuration:
         >>> settings = Configuration()
         >>> defaults = {"mysql": {"databases": {"prod":"prod_db1", "dev":"dev_db1"}}}
         >>> settings.init_config("config", defaults, "app_config")
-        >>> settings.mysql_databases["prod"]
-        'prod_db1'
-        >>> settings.config["mysql"]["databases"]["prod"] = "prod_db2"
+        >>> settings.mysql.databases.prod = "prod_db2"
         >>> settings.update()
-        >>> {settings.mysql_databases["prod"]}
+        >>> settings.config["mysql"]["databases"]["prod"]
         'prod_db2'
+        >>> settings.config["mysql"]["databases"]["prod"] = "prod_db3"
+        >>> settings.update()
+        >>> settings.mysql_databases["prod"]
+        'prod_db3'
         ```
         """
         self._write_config_to_file()
@@ -264,7 +297,10 @@ class Configuration:
         self.logger.debug("Writing config to file")
         try:
             with Path(self._full_config_path).open("w") as conf:
-                conf.write(tomlkit.dumps(self.config))
+                toml_document = tomlkit.dumps(self.config)
+                # Use regular expression to replace consecutive empty lines with a single newline
+                cleaned_toml = re.sub(r'\n{3,}', '\n\n', toml_document)
+                conf.write(cleaned_toml)
         except (OSError,FileNotFoundError,TypeError) as exc: # pragma: no cover
             self.logger.exception("Could not write config file!")
             raise TOMLWriteConfigError("unable to write config file!") from exc # pragma: no cover
@@ -303,3 +339,39 @@ class Configuration:
         except OSError as exc: # pragma: no cover
             self.logger.exception("Could not create config file!")
             raise TOMLCreateConfigError(f"unable to create config file: ({config_file_path})") from exc
+
+class ConfigObject:
+    """
+    Represents a configuration object that wraps a dictionary and provides attribute access.
+
+    Any key in the dictionary can be accessed as an attribute.
+    
+    Args:
+        table (dict): The dictionary representing the configuration.
+
+    Attributes:
+        _table (dict): The internal dictionary representing the configuration.
+
+    """
+
+    def __init__(self, table: dict):
+        self._table = table
+        for key, value in table.items():
+            if isinstance(value, dict):
+                self.__dict__[key] = ConfigObject(value)
+            else:
+                self.__dict__[key] = value
+
+    def __setattr__(self, __name: str, __value: Any) -> None:
+        """Update the table value when an attribute is set"""
+        super().__setattr__(__name, __value)
+        if __name == "_table":
+            return
+        if hasattr(self, "_table") and __name in self._table:
+            self._table[__name] = __value
+
+    def __repr__(self) -> str:
+        return f"ConfigObject({self._table})"
+
+    def __str__(self) -> str:
+        return f"<ConfigObject> {self._table}"

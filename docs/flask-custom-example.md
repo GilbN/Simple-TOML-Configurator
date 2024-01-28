@@ -8,7 +8,7 @@ The `Configuration` class can be extended and customized to cater to application
 ├── __init__.py
 ├── app.py
 ├── utils.py
-└── extenstions
+└── extensions
     └── config.py
 ```
 

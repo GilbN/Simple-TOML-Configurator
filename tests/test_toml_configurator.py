@@ -3,6 +3,7 @@ import pytest
 from pathlib import Path
 from tomlkit import TOMLDocument
 from simple_toml_configurator import Configuration
+from simple_toml_configurator.toml_configurator import ConfigObject
 
 @pytest.fixture
 def tmp_config_file_name() -> str:
@@ -127,4 +128,39 @@ def test_update(config_instance: Configuration, default_config: dict[str, dict])
     config_instance.config = default_config
     config_instance.config["logging"]["debug"] = True
     config_instance.update()
-    assert config_instance.logging_debug == True
+    assert config_instance.logging_debug is True
+
+def test_update_attribute(config_instance: Configuration, default_config: dict[str, dict]):
+    config_instance.logging.debug = True
+    config_instance.update()
+    assert config_instance.logging_debug is True
+
+@pytest.fixture
+def config_object():
+    config = {
+        "app": {
+            "host": "localhost",
+            "port": 8080
+        },
+        "logging": {
+            "debug": False,
+            "level": "info"
+        }
+    }
+    return ConfigObject(config)
+
+def test_config_object_attribute_access(config_object):
+    assert config_object.app.host == "localhost"
+    assert config_object.app.port == 8080
+    assert config_object.logging.debug is False
+    assert config_object.logging.level == "info"
+
+def test_config_object_attribute_update(config_object):
+    config_object.app.host = "test_localhost"
+    config_object.app.port = 8888
+    config_object.logging.debug = True
+    config_object.logging.level = "debug"
+    assert config_object.app.host == "test_localhost"
+    assert config_object.app.port == 8888
+    assert config_object.logging.debug is True
+    assert config_object.logging.level == "debug"
