@@ -3,12 +3,14 @@ import os
 import re
 from collections.abc import Mapping
 import logging
+import ast
+from dateutil.parser import parse, ParserError
 from pathlib import Path
 import tomlkit
 from tomlkit import TOMLDocument
 from .exceptions import *
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,7 @@ class Configuration:
                 "upload_folder": "uploads"
                 }
             }
+        >>> import os
         >>> from simple_toml_configurator import Configuration
         >>> settings = Configuration("config", default_config, "app_config")
         {'app': {'ip': '0.0.0.0', 'host': '', 'port': 5000, 'upload_folder': 'uploads'}}
@@ -45,6 +48,8 @@ class Configuration:
         >>> settings.update()
         >>> settings.app_ip
         '0.0.0.0'
+        >>> print(os.environ.get("APP_UPLOAD_FOLDER"))
+        'uploads'
         ```
 
     Attributes:
@@ -105,14 +110,18 @@ class Configuration:
     def __str__(self) -> str:
         return f"<Configuration> File:'{getattr(self, 'config_file_name', None)}' Path:'{getattr(self, '_full_config_path', None)}'" # pragma: no cover
 
-    def init_config(self, config_path:str|Path, defaults:dict[str,dict], config_file_name:str="config") -> TOMLDocument:
+    def init_config(self, config_path:str|Path, defaults:dict[str,dict], config_file_name:str="config",env_prefix:str="") -> TOMLDocument:
         """
         Creates the config folder and toml file if needed.
 
         Upon init it will add any new/missing values/tables from `defaults` into the existing TOML config.
         Removes any old values/tables from `self.config` that are not in `self.defaults`.
 
-        Sets all config keys as attributes on the class. e.g. `self.table_key` and `self._table_key =`
+        Sets all config keys as attributes on the class. e.g. `self.table.key`, `self.table_key` and `self._table_key`
+
+        Env variables of all config keys are set as uppercase. e.g. `APP_HOST` and `APP_PORT` or `APP_CONFIG_APP_HOST` and `APP_CONFIG_APP_PORT` if `env_prefix` is set to "app_config".
+        
+        Nested tables are set as nested environment variables. e.g. `APP_CONFIG_APP_DATABASES_PROD` and `APP_CONFIG_APP_DATABASES_DEV`.
 
         Examples:
             ```pycon
@@ -124,6 +133,7 @@ class Configuration:
             config_path (str|Path): Path to config folder
             defaults (dict[str,dict]): Dictionary with all default values for your application
             config_file_name (str, optional): Name of the config file. Defaults to "config".
+            env_prefix (str, optional): Prefix for environment variables. Defaults to "".
 
         Returns:
             dict[str,Any]: Returns a TOMLDocument.
@@ -133,13 +143,19 @@ class Configuration:
             raise TypeError(f"argument config_path must be of type {type(str)} or {type(Path)}, not: {type(config_path)}") # pragma: no cover
         if not isinstance(defaults, dict):
             raise TypeError(f"argument defaults must be of type {type(dict)}, not: {type(defaults)}") # pragma: no cover
+        if not isinstance(env_prefix, str):
+            raise TypeError(f"argument env_prefix must be of type {type(str)}, not: {type(env_prefix)}") # pragma: no cover
+        if not isinstance(config_file_name, str):
+            raise TypeError(f"argument config_file_name must be of type {type(str)}, not: {type(config_file_name)}") # pragma: no cover
 
         self.defaults:dict[str,dict] = defaults
         self.config_path:str|Path = config_path
         self.config_file_name:str = f"{config_file_name}.toml"
+        self.env_prefix:str = env_prefix
         self._full_config_path:str = os.path.join(self.config_path, self.config_file_name)
         self.config:TOMLDocument = self._load_config()
         self._sync_config_values()
+        self._set_os_env()
         self._set_attributes()
         return self.config
 
@@ -237,6 +253,81 @@ class Configuration:
             for key, value in self.config[table].items():
                 setattr(self, f"_{table}_{key}", value)
                 setattr(self, f"{table}_{key}", value)
+                self._update_os_env(table, key, value)
+
+    def _parse_env_value(self, value:str) -> Any:
+        """Parse the environment variable value to the correct type.
+        
+        Args:
+            value (str): The value to parse
+        
+        Returns:
+            Any: The parsed value as the correct type or the original value if it could not be parsed.
+        """
+        if str(value).lower() == "true":
+            return True
+        if str(value).lower() == "false":
+            return False
+        try:
+            parsed_value = ast.literal_eval(value)
+            if isinstance(parsed_value, (int, float, bool, str, list, dict)):
+                return parsed_value
+        except (ValueError, SyntaxError):
+            pass
+        try:
+            return parse(value)
+        except ParserError:
+            pass
+        return str(value)
+
+    def _make_env_name(self, table:str, key:str) -> str:
+        """Create an environment variable name from the table and key.
+
+        Args:
+            table (str): The table name
+            key (str): The key name
+            
+        Returns:
+            str: The environment variable name
+        """
+        if self.env_prefix:
+            return f"{self.env_prefix.upper()}_{table.upper()}_{str(key).upper()}"
+        return f"{table.upper()}_{str(key).upper()}"
+
+    def _update_os_env(self, table:str, key:str, value:Any) -> None:
+        """Update the os environment variable with the same name as the config table and key.
+
+        If the value is a dictionary, creates an environment variable for each item in the dictionary,
+        handling nested dictionaries recursively.
+
+        Args:
+            table (str): The table name
+            key (str): The key name
+            value (Any): The value
+        """
+        if isinstance(value, dict):
+            for subkey, subvalue in value.items():
+                self._update_os_env(table, f"{key}_{subkey}", subvalue)
+        else:
+            env_var = self._make_env_name(table, key)
+            os.environ[env_var] = str(value)
+
+    def _set_os_env(self) -> None:
+        """Set all config keys as environment variables.
+
+        The environment variable is set as uppercase. e.g. `APP_HOST` and `APP_PORT` or `APP_CONFIG_APP_HOST` and `APP_CONFIG_APP_PORT` if `env_prefix` is set to "app_config".
+        
+        If the environment variable already exists, the config value is updated to the env value and will overwrite any config value.
+        """
+        for table in self.config.copy():
+            for key, value in self.config[table].items():
+                existing_env = os.environ.get(self._make_env_name(table, key))
+                if existing_env:
+                    logger.info("Setting Table: ('%s') Key: ('%s') to value from existing environment variable: ('%s')",table, key, existing_env)
+                    self.config[table][key] = self._parse_env_value(existing_env)
+                    continue
+                self._update_os_env(table, key, value)
+        self._write_config_to_file()
 
     def update_config(self, settings: dict[str,Any]) -> None:
         """Update all config values from a dictionary, set new attribute values and write the config to file.
@@ -269,6 +360,7 @@ class Configuration:
             self.logger.exception("Could not update config!")
             raise TOMLConfigUpdateError("unable to update config!") from exc
         self._write_config_to_file()
+        self._set_attributes()
     
     def update(self):
         """Write the current config to file.

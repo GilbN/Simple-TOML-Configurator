@@ -22,7 +22,7 @@ https://gilbn.github.io/Simple-TOML-Configurator/
 
 4. **Attribute-Based Access:** Accessing configuration values is straightforward, thanks to the attribute-based approach. Settings can be accessed and updated as attributes, making it convenient for both reading and modifying values.
 
-5. **Updating Configurations:** The library enables the updating of configuration settings from a dictionary, ensuring that the changes are accurately reflected both in-memory and in the stored TOML file.
+5. **Environment Variable Support:** Configuration values are automatically set as environment variables, making it easier to use the configuration values in your application. Environment variable are set as uppercase. e.g. `APP_HOST` and `APP_PORT` or `PROJECT_APP_HOST` and `PROJECT_APP_PORT` if `env_prefix` is set to "project". This also works for nested values. ex: `TABLE_KEY_LEVEL1_KEY_LEVEL2_KEY`. This works for any level of nesting.**Environment variables set before the configuration is loaded will not be overwritten, but instead will overwrite the existing config value.**
 
 6. **Default Values:** Developers can define default values for various configuration sections and keys. The library automatically incorporates new values and manages the removal of outdated ones.
 
@@ -40,6 +40,7 @@ pip install simple-toml-configurator
 See [Usage](https://gilbn.github.io/Simple-TOML-Configurator/latest/usage-examples/) for more examples.
 
 ```python
+import os
 from simple_toml_configurator import Configuration
 
 # Define default configuration values
@@ -60,14 +61,18 @@ default_config = {
     }
 }
 
+# Set environment variables
+os.environ["PROJECT_APP_UPLOAD_FOLDER"] = "overridden_uploads"
+
 # Initialize the Simple TOML Configurator
-settings = Configuration("config", default_config, "app_config")
+settings = Configuration(config_path="config", defaults=default_config, config_file_name="app_config", env_prefix="project")
 # Creates an `app_config.toml` file in the `config` folder at the current working directory.
 
 # Access and update configuration values
 print(settings.app.ip)  # Output: '0.0.0.0'
 settings.app.ip = "1.2.3.4"
-print(settings.app.ip)  # Output: '1.2.3.4'
+settings.update()
+print(settings.app_ip)  # Output: '1.2.3.4'
 
 # Access nested configuration values
 print(settings.mysql.databases.prod)  # Output: 'db1'
@@ -76,29 +81,33 @@ settings.update()
 print(settings.mysql.databases.prod)  # Output: 'new_value'
 
 # Access and update configuration values
-print(settings.app_ip)  # Output: '0.0.0.0'
-settings.update_config({"app_ip": "1.2.3.4"})
 print(settings.app_ip)  # Output: '1.2.3.4'
+settings.update_config({"app_ip": "1.1.1.1"})
+print(settings.app_ip)  # Output: '1.1.1.1'
 
 # Access all settings as a dictionary
 all_settings = settings.get_settings()
 print(all_settings)
-# Output: {'app_ip': '1.2.3.4', 'app_host': '', 'app_port': 5000, 'app_upload_folder': 'uploads'}
+# Output: {'app_ip': '1.1.1.1', 'app_host': '', 'app_port': 5000, 'app_upload_folder': 'overridden_uploads', 'mysql_user': 'root', 'mysql_password': 'root', 'mysql_databases': {'prod': 'new_value', 'dev': 'db2'}}
 
 # Modify values directly in the config dictionary
 settings.config["mysql"]["databases"]["prod"] = "db3"
 settings.update()
 print(settings.mysql_databases["prod"])  # Output: 'db3'
+
+# Access environment variables
+print(os.environ["PROJECT_MYSQL_DATABASES_PROD"])  # Output: 'db3'
+print(os.environ["PROJECT_APP_UPLOAD_FOLDER"])  # Output: 'overridden_uploads'
 ```
 
 **`app_config.toml` contents**
 
 ```toml
 [app]
-ip = "1.2.3.4"
+ip = "1.1.1.1"
 host = ""
 port = 5000
-upload_folder = "uploads"
+upload_folder = "overridden_uploads"
 
 [mysql]
 user = "root"

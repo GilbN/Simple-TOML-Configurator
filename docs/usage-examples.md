@@ -58,6 +58,17 @@ There are two main ways to access configuration values:
     !!! note
         This works for any level of nesting.
 
+### Environment variable access
+
+Access the configuration values as environment variables. ex: `APP_IP` instead of `settings.app.ip`.
+
+Or `APP_CONFIG_APP_IP` if `env_prefix` is set to "app_config".
+
+You can also access nested values. ex: `MYSQL_DATABASES_PROD`.
+
+!!! note
+    This works for any level of nesting.
+
 ### Updating Configuration Settings
 
 Use the `update_config` or `update` method to modify values while ensuring consistency across instances.
