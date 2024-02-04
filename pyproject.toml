@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Simple-TOML-Configurator"
-version = "1.2.0"
+version = "1.2.1"
 license = {text = "MIT License"}
 authors = [{name = "GilbN", email = "me@gilbn.dev"}]
 description = "A simple TOML configurator for Python"

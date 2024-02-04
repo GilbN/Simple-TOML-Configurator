@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning].
 
 - /
 
-## [1.2.0] - 2024-02-04
+## [1.2.1] - 2024-02-04
 
-## New Release: v1.2.0 - Set environment variables from configuration.
+## New Release: v1.2.1 - Set environment variables from configuration.
 
 ### What's New
 
@@ -74,6 +74,6 @@ print(settings.mysql.databases.prod)  # Output: 'new_value'
 
 <!-- Versions -->
 [unreleased]: https://github.com/gilbn/simple-toml-configurator/compare/1.2.0...HEAD
-[1.2.0]: https://github.com/gilbn/simple-toml-configurator/releases/tag/1.2.0
+[1.2.1]: https://github.com/gilbn/simple-toml-configurator/releases/tag/1.2.1
 [1.1.0]: https://github.com/gilbn/simple-toml-configurator/releases/tag/1.1.0
 [1.0.0]: https://github.com/gilbn/simple-toml-configurator/releases/tag/1.0.0
