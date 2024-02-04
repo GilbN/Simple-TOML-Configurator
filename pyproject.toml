@@ -21,7 +21,8 @@ classifiers = [
 ]
 keywords = ["configuration", "TOML", "settings", "management", "Python"]
 dependencies = [
-    "tomlkit>=0.12.1"
+    "tomlkit>=0.12.1",
+    "python-dateutil>=2.8.2"
 ]
 
 [project.urls]
