@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning].
 
 - /
 
+## [1.2.2] - 2024-03-10
+
+## New Release v.1.2.2
+
+## Fixes
+
+Fixes `TypeError: unsupported operand type(s) for |: 'type' and 'type'.` error when using Python version < 3.10
+
 ## [1.2.1] - 2024-02-04
 
 ## New Release: v1.2.1 - Set environment variables from configuration.
@@ -73,7 +81,8 @@ print(settings.mysql.databases.prod)  # Output: 'new_value'
 [semantic versioning]: https://semver.org/spec/v2.0.0.html
 
 <!-- Versions -->
-[unreleased]: https://github.com/gilbn/simple-toml-configurator/compare/1.2.0...HEAD
+[unreleased]: https://github.com/gilbn/simple-toml-configurator/compare/1.2.2...HEAD
+[1.2.2]: https://github.com/gilbn/simple-toml-configurator/releases/tag/1.2.2
 [1.2.1]: https://github.com/gilbn/simple-toml-configurator/releases/tag/1.2.1
 [1.1.0]: https://github.com/gilbn/simple-toml-configurator/releases/tag/1.1.0
 [1.0.0]: https://github.com/gilbn/simple-toml-configurator/releases/tag/1.0.0
