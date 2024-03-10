@@ -53,7 +53,7 @@ plugins:
 
 watch:
   - src/
-  - changelog.md
+  - CHANGELOG.md
   - examples/
 
 extra_css:
