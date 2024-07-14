@@ -9,9 +9,9 @@ from dateutil.parser import parse, ParserError
 from pathlib import Path
 import tomlkit
 from tomlkit import TOMLDocument
-from .exceptions import *
+from .exceptions import TOMLConfigUpdateError, TOMLWriteConfigError, TOMLCreateConfigError, TOMLLoadConfigError
 
-__version__ = "1.2.2"
+__version__ = "1.3.0"
 
 logger = logging.getLogger(__name__)
 
@@ -88,15 +88,15 @@ class Configuration:
                 configure_logging(log_level)
                 logger.debug(f"Debug logging set to {value}")
 
-            defaults = {
-                "logging": {
-                    "debug": False
-                ...
-                }
+        defaults = {
+            "logging": {
+                "debug": False
+            ...
+            }
 
-            config_path = os.environ.get("CONFIG_PATH", "config")
-            settings = CustomConfiguration()
-            settings.init_config(config_path, defaults, "app_config"))
+        config_path = os.environ.get("CONFIG_PATH", "config")
+        settings = CustomConfiguration()
+        settings.init_config(config_path, defaults, "app_config"))
         ```
     """
 
@@ -153,6 +153,7 @@ class Configuration:
         self.config_path:str|Path = config_path
         self.config_file_name:str = f"{config_file_name}.toml"
         self.env_prefix:str = env_prefix
+        self._envs: dict[str,Any] = {}
         self._full_config_path:str = os.path.join(self.config_path, self.config_file_name)
         self.config:TOMLDocument = self._load_config()
         self._sync_config_values()
@@ -237,6 +238,22 @@ class Configuration:
                 settings[f"{table}_{key}"] = value
         return settings
 
+    def get_envs(self) -> dict[str, Any]:
+        """Get all the environment variables we set as a dictionary.
+        
+        Examples:
+            ```pycon
+            >>> defaults = {...}
+            >>> settings = Configuration()
+            >>> settings.init_config("config", defaults, "app_config"))
+            >>> settings.get_envs()
+            {'PREFIX_APP_IP': '0.0.0.0'}
+        
+        Returns:
+            dict[str, Any]: Dictionary with all environment variables name as keys and their value.
+        """
+        return self._envs
+
     def _set_attributes(self) -> dict[str, Any]:
         """Set all config keys as attributes on the class.
 
@@ -312,6 +329,7 @@ class Configuration:
         else:
             env_var = self._make_env_name(table, key)
             os.environ[env_var] = str(value)
+            self._envs[env_var] = value
 
     def _set_os_env(self) -> None:
         """Set all config keys as environment variables.
@@ -389,7 +407,7 @@ class Configuration:
         """Update and write the config to file"""
         self.logger.debug("Writing config to file")
         try:
-            with Path(self._full_config_path).open("w") as conf:
+            with Path(self._full_config_path).open("w", encoding="utf-8") as conf:
                 toml_document = tomlkit.dumps(self.config)
                 # Use regular expression to replace consecutive empty lines with a single newline
                 cleaned_toml = re.sub(r'\n{3,}', '\n\n', toml_document)

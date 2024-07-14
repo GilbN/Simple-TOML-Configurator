@@ -9,11 +9,25 @@ and this project adheres to [Semantic Versioning].
 
 - /
 
+## [1.3.0] - 2024-07-14
+
+### Added
+
+Added new method `get_envs` that returns all the environment variables set in a dict.
+```python
+    >>> settings.get_envs()
+    {'PREFIX_APP_IP': '0.0.0.0'}
+```
+
+### Fixed
+
+Fixed docstring indentation.
+
 ## [1.2.2] - 2024-03-10
 
 ## New Release v.1.2.2
 
-## Fixes
+### Fixes
 
 Fixes `TypeError: unsupported operand type(s) for |: 'type' and 'type'.` error when using Python version < 3.10
 
@@ -81,7 +95,8 @@ print(settings.mysql.databases.prod)  # Output: 'new_value'
 [semantic versioning]: https://semver.org/spec/v2.0.0.html
 
 <!-- Versions -->
-[unreleased]: https://github.com/gilbn/simple-toml-configurator/compare/1.2.2...HEAD
+[unreleased]: https://github.com/gilbn/simple-toml-configurator/compare/1.3.0...HEAD
+[1.3.0]: https://github.com/gilbn/simple-toml-configurator/releases/tag/1.3.0
 [1.2.2]: https://github.com/gilbn/simple-toml-configurator/releases/tag/1.2.2
 [1.2.1]: https://github.com/gilbn/simple-toml-configurator/releases/tag/1.2.1
 [1.1.0]: https://github.com/gilbn/simple-toml-configurator/releases/tag/1.1.0
