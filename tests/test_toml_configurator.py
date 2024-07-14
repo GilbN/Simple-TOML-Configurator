@@ -270,3 +270,8 @@ def test_make_env_name_without_prefix(config_instance: Configuration):
     key = "port"
     env_name = config_instance._make_env_name(table, key)
     assert env_name == "APP_PORT"
+
+def test_get_envs(config_instance: Configuration):
+    config_instance.logging.debug = False
+    config_instance.update()
+    assert config_instance.get_envs() == {"LOGGING_DEBUG": False}
